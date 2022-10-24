@@ -11,7 +11,7 @@ public class Goose
 
     }
 
-    public Goose(int age, string name)
+    public Goose(int age, string name, bool owned)
     {
         Age = age;
         Name = name;
@@ -21,5 +21,10 @@ public class Goose
     public void Quack()
     {
         Console.WriteLine("{0} quacked!", Name);
+    }
+
+    public void GiveOwner()
+    {
+        IsBought = true;
     }
 }
