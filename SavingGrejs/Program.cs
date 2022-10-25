@@ -47,7 +47,7 @@ void GooseEditor()
 
     while (inEditor)
     {
-        Console.WriteLine("Press 'a' to add a goose\nPress 'l' to list all geese");
+        Console.WriteLine("Press 'a' to add a goose\nPress 'l' to list all geese\nPress 's' to save\nPress 'o' to load from Store.json");
 
         string? ans = Console.ReadLine();
 
@@ -61,15 +61,60 @@ void GooseEditor()
             Console.Clear();
             ListGoose();
         }
+        else if (ans?.ToLower() == "s")
+        {
+            Console.Clear();
+            if (storeGooses.Any())
+            {
+                saveToFile();
+                Console.WriteLine("Saved content!");
+            }
+            else
+            {
+                Console.WriteLine("There is nothing to save!");
+            }
+            Console.WriteLine("Press any key to continue");
+            Console.ReadKey();
+        }
+        else if (ans?.ToLower() == "o")
+        {
+            if (File.Exists(fileName))
+            {
+                LoadStoreItems();
+                Console.WriteLine("Store items loaded!");
+            }
+            else
+            {
+                Console.WriteLine("There is no Store.json to load from!");
+                if (File.Exists("backup.json"))
+                {
+                    Console.WriteLine("Backup detected, will try to load backup");
+                    storeGooses = new();
+                    foreach (Goose g in JsonSerializer.Deserialize<List<Goose>>("backup.json"))
+                    {
+                        storeGooses.Add(g);
+                    }
+                }
+            }
+        }
     }
 }
 
 void ListGoose()
 {
-    foreach (Goose g in storeGooses)
+    if (storeGooses.Any())
     {
-
+        foreach (Goose g in storeGooses)
+        {
+            Console.WriteLine($"Goose {g.Name} is {g.Age} years old. Has owner: {g.IsBought}");
+        }
+        Console.WriteLine("Press any key to continue");
     }
+    else
+    {
+        Console.WriteLine("There are no geese to list!\nPress any key to continue");
+    }
+    Console.ReadKey();
 }
 
 void AddGoose()
@@ -97,33 +142,33 @@ void AddGoose()
     do
     {
         owned = Console.ReadLine();
-    } while (owned?.ToLower() != "n" || owned?.ToLower() != "y");
+    } while (owned?.ToLower() != "n" && owned?.ToLower() != "y");
 
     bool hasOwner = false;
     string ownerText = "It has no owner.";
     if (owned == "y") { hasOwner = true; ownerText = "It has a owner"; }
 
     Console.WriteLine("How old is your new goose? (0-99)");
-    string age = "";
+    int ageInt = 0;
+    bool done = false;
     do
     {
-        string? temp = Console.ReadLine();
+        done = int.TryParse(Console.ReadLine(), out ageInt);
 
-        if (temp != null && temp?.Length > 0)
-        {
-            age = temp;
-        }
-        else
+        if (!done)
         {
             Console.WriteLine("Age must be between 0 and 99");
         }
+        else
+        {
+            Console.WriteLine("Your new goose age is {0}", ageInt);
+        }
 
+    } while (!done);
 
-    } while (age.All(char.IsNumber)); //Proud of this Regex, how it is supposed to be used :) //Samme
+    storeGooses.Add(new Goose(ageInt, name, hasOwner));
 
-    storeGooses.Add(new Goose(int.Parse(age), name, hasOwner));
-
-    Console.WriteLine($"Goose {name}, aged {age} has been added! {ownerText}");
+    Console.WriteLine($"Goose {name}, aged {ageInt} has been added! {ownerText}");
     System.Threading.Thread.Sleep(2000);
     Console.Clear();
 }
@@ -200,6 +245,26 @@ void LoadStoreItems()
 bool CheckForFile()
 {
     return File.Exists(fileName);
+}
+
+void saveToFile()
+{
+    string fileContent = JsonSerializer.Serialize<List<Goose>>(storeGooses);
+
+    if (CheckForFile())
+    {
+        if (File.Exists("backup.json"))
+        {
+            File.Delete("backup.json");
+            File.Copy(fileName, "backup.json");
+        }
+        else
+        {
+            File.Copy(fileName, "backup.json");
+        }
+        File.Delete(fileName);
+    }
+    File.WriteAllText(fileName, fileContent);
 }
 
 enum States
