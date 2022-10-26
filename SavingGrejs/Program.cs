@@ -4,8 +4,6 @@ using System.Text.Json;
 List<Goose> storeGooses = new();
 string fileName = "Store.json";
 
-States gameState = States.Store;
-
 Game();
 
 void Game()
@@ -17,27 +15,10 @@ void Game()
 void Store()
 {
     bool inStore = true;
+    Console.WriteLine("Welcome to the Goose store!");
     while (inStore)
     {
-        switch (gameState)
-        {
-            case States.Store:
-                Console.WriteLine("Welcome to the Goose store!");
-                Console.WriteLine("Type 'help' to see available commands.");
-                string? ans = Console.ReadLine();
-                if (ans == "help")
-                {
-                    DisplayCommands();
-                }
-
-                break;
-
-            case States.Editor:
-                GooseEditor();
-                break;
-        }
-
-
+        GooseEditor();
     }
 }
 
@@ -47,8 +28,7 @@ void GooseEditor()
 
     while (inEditor)
     {
-        Console.WriteLine("Press 'a' to add a goose\nPress 'l' to list all geese\nPress 's' to save\nPress 'o' to load from Store.json");
-
+        DisplayCommands();
         string? ans = Console.ReadLine();
 
         if (ans?.ToLower() == "a")
@@ -81,21 +61,52 @@ void GooseEditor()
             if (File.Exists(fileName))
             {
                 LoadStoreItems();
-                Console.WriteLine("Store items loaded!");
+                Console.WriteLine("Saved geese appended!");
             }
             else
             {
-                Console.WriteLine("There is no Store.json to load from!");
+                Console.WriteLine("There is no Store.json to append from!");
                 if (File.Exists("backup.json"))
                 {
-                    Console.WriteLine("Backup detected, will try to load backup");
+                    Console.WriteLine("Backup detected, will try to append geese from backup");
                     storeGooses = new();
-                    foreach (Goose g in JsonSerializer.Deserialize<List<Goose>>("backup.json"))
+                    string jsonString = File.ReadAllText("backup.json");
+                    foreach (Goose g in JsonSerializer.Deserialize<List<Goose>>(jsonString))
                     {
                         storeGooses.Add(g);
                     }
                 }
             }
+        }
+        else if (ans?.ToLower() == "r")
+        {
+            storeGooses = new();
+            Console.WriteLine("All geese removed!");
+        }
+        else if (ans?.ToLower() == "u")
+        {
+            Console.WriteLine("Load and replace geese started!");
+            storeGooses = new();
+            if (File.Exists(fileName))
+            {
+                LoadStoreItems();
+                Console.WriteLine("Saved geese replaced the old ones!");
+            }
+            else
+            {
+                Console.WriteLine("There is no Store.json to replace geese from!");
+                if (File.Exists("backup.json"))
+                {
+                    Console.WriteLine("Backup detected, will try to replace current geese with backup geese");
+                    storeGooses = new();
+                    string jsonString = File.ReadAllText("backup.json");
+                    foreach (Goose g in JsonSerializer.Deserialize<List<Goose>>(jsonString))
+                    {
+                        storeGooses.Add(g);
+                    }
+                }
+            }
+
         }
     }
 }
@@ -133,8 +144,6 @@ void AddGoose()
         {
             Console.WriteLine("That is not a valid name...");
         }
-        System.Threading.Thread.Sleep(2000);
-        Console.Clear();
     }
 
     Console.WriteLine("Is your new goose owned? (y/n)");
@@ -176,27 +185,8 @@ void AddGoose()
 void DisplayCommands()
 {
     Console.Clear();
-    if (storeGooses.Any())
-    {
-        foreach (Goose g in storeGooses)
-        {
-            string temp;
-            if (g.IsBought)
-            {
-                temp = "Has owner";
-            }
-            else
-            {
-                temp = "Has no owner";
-            }
-            Console.WriteLine($"Goose {g.Name}: {temp}, {g.Age} years old.");
-        }
-    }
-    else
-    {
-        Console.WriteLine("There are no gooses available in the store!\nPress any key to enter the editor.");
-        gameState = States.Editor;
-    }
+
+    Console.WriteLine("Press 'a' to add a goose\nPress 'l' to list all geese\nPress 's' to save\nPress 'o' to append geese from Store.json\nPress 'r' to remove all geese\nPress 'u' to load and replace geese from Store.json");
 }
 
 void Greet()
@@ -236,9 +226,18 @@ void Greet()
 
 void LoadStoreItems()
 {
-    foreach (var goose in JsonSerializer.Deserialize<List<Goose>>(fileName))
+    //Extra protection with File.Exists
+    if (File.Exists(fileName))
     {
-        storeGooses.Add(goose);
+        string jsonString = File.ReadAllText(fileName);
+        foreach (Goose g in JsonSerializer.Deserialize<List<Goose>>(jsonString))
+        {
+            storeGooses.Add(g);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Something bypassed loading system! Ignore this warning, it is just anti-crashing.");
     }
 }
 
